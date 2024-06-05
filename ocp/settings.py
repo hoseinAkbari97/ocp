@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     
     # My apps
     'userauths',
+    'store',
 ]
 
 MIDDLEWARE = [
