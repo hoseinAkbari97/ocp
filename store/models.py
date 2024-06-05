@@ -38,7 +38,7 @@ class Product(models.Model):
         
 class ProductEpisode(models.Model):
     product = models.ForeignKey(
-        Product, on_delete=models.CASCADE, related_name='images')
+        Product, on_delete=models.CASCADE, related_name='episodes')
     episode_number = models.PositiveIntegerField(
         validators=[MinValueValidator(1)])
     file = models.FileField(
