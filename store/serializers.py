@@ -75,9 +75,10 @@ class AddCartItemSerializer(serializers.ModelSerializer):
 
         try:
             cart_item = CartItem.objects.get(
-                cart_id=cart_id, product_id=product_id)
-            cart_item.save()
-            self.instance = cart_item
+                cart_id=cart_id,
+                product_id=product_id)
+            raise serializers.ValidationError(
+                'This product is already in the cart.')
         except CartItem.DoesNotExist:
             self.instance = CartItem.objects.create(
                 cart_id=cart_id, **self.validated_data)
@@ -86,13 +87,33 @@ class AddCartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product_id', 'quantity']
+        fields = ['id', 'product_id']
+        
 
+class RemoveCartItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField()
 
-class UpdateCartItemSerializer(serializers.ModelSerializer):
+    def validate_product_id(self, value):
+        if not CartItem.objects.filter(
+            cart_id=self.context['cart_id'],
+            product_id=value).exists():
+            raise serializers.ValidationError(
+                'No product with the given ID was found in the cart.')
+        return value
+
+    def save(self, **kwargs):
+        cart_id = self.context['cart_id']
+        product_id = self.validated_data['product_id']
+
+        cart_item = CartItem.objects.get(
+            cart_id=cart_id, product_id=product_id)
+        cart_item.delete()
+        return {'message': 'Product removed from the cart.'}
+
     class Meta:
         model = CartItem
-        fields = ['quantity']
+        fields = ['product_id']
+
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -108,7 +129,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'unit_price', 'quantity']
+        fields = ['id', 'product', 'price']
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -151,8 +172,7 @@ class CreateOrderSerializer(serializers.Serializer):
                 OrderItem(
                     order=order,
                     product=item.product,
-                    unit_price=item.product.unit_price,
-                    quantity=item.quantity
+                    price=item.product.price,
                 ) for item in cart_items
             ]
             OrderItem.objects.bulk_create(order_items)
