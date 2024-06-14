@@ -61,8 +61,6 @@ class CartItemViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return AddCartItemSerializer
-        elif self.request.method == 'PATCH':
-            return UpdateCartItemSerializer
         return CartItemSerializer
 
     def get_serializer_context(self):
@@ -130,7 +128,16 @@ class OrderViewSet(ModelViewSet):
         customer_id = Customer.objects.only(
             'id').get(user_id=user.id)
         return Order.objects.filter(customer_id=customer_id)
-
+    
+    @action(detail=True, methods=['get', 'post'], permission_classes=[IsAuthenticated])
+    def pay(self, request, pk=None):
+        print("Pay endpoint called")  # Debugging line
+        order = self.get_object()
+        print(f"Order before update: {order.payment_status}")  # Debugging line
+        order.payment_status = Order.PAYMENT_STATUS_COMPLETE
+        order.save()
+        print(f"Order after update: {order.payment_status}")  # Debugging line
+        return Response({'status': 'payment completed'}, status=status.HTTP_200_OK)
 
 class ProductEpisodeViewSet(ModelViewSet):
     serializer_class = ProductEpisodeSerializer
